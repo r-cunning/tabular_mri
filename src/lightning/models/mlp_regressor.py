@@ -6,23 +6,29 @@ import torch.nn.functional as F
 
 
 class SimpleMLP(pl.LightningModule):
-    def __init__(self, input_size, hidden_size, l2_strength=0.001, name="SimpleMLP"):
+    def __init__(self, input_size, hidden_size, lr=0.01, l2_strength=0.001, name="SimpleMLP"):
         super(SimpleMLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, 1)  # Only one output neuron for regression
+        
+        self.mlp = nn.Sequential(
+            nn.Linear(input_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
+        )
+        # learning rate
+        self.lr = lr
         # L2 regularization strength
         self.l2_strength = l2_strength
         
         self.test_loss = None
         self.name = name
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.mlp(x)
         return x
 
     def training_step(self, batch, batch_idx):
+        self.train()
         x, y = batch
         y_hat = self(x)
         loss = F.l1_loss(y_hat, y)
@@ -38,6 +44,11 @@ class SimpleMLP(pl.LightningModule):
         
         return loss
     
+    def predict(self, x):
+        self.eval()
+        with torch.no_grad():
+            return self(x)
+    
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
@@ -50,6 +61,8 @@ class SimpleMLP(pl.LightningModule):
         y_hat = self(x)
         loss = F.l1_loss(y_hat, y)
         self.log('test_loss', loss)  # Logging the test loss
+        self.log('input', x)
+        self.log('output', y_hat)
         self.test_loss = loss.item()
         return loss
 
@@ -59,7 +72,7 @@ class SimpleMLP(pl.LightningModule):
         return self.test_loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         return optimizer
     @property
     def model_name(self):

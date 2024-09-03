@@ -62,7 +62,7 @@ import shap
 
 
 class TorchRun:
-    def __init__(self, base_model: pl.LightningModule = SimpleMLP, hidden_size:int = 32, dataset: bpd = None, 
+    def __init__(self, base_model: pl.LightningModule = SimpleMLP, hidden_size:int = 50, dataset: bpd = None, 
                  batch_size: int = 3, epochs: int = 60, 
                  lr: float = 0.001, training_regime = kfold, data_transforms: dict = None,
                  dry_run: bool = False, seed: int = 42,

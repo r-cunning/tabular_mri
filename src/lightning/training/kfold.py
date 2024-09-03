@@ -62,8 +62,15 @@ def train_dataloader(model, data_loader, optimizer, fabric, epoch, hparams, fold
             break
         
     running_loss = running_loss / i
-    weight_norm = torch.norm(model.fc1.weight.data, p='fro')
-
+    
+    # Get the weights of the first layer in any PyTorch model
+    first_layer_weights = next(model.parameters())
+    
+    weight_norm = torch.norm(first_layer_weights, p='fro')
+    
+    # Original:
+    # weight_norm = torch.norm(model.fc1.weight.data, p='fro')
+    
     logger.log_metrics({'train_loss': running_loss}, step=epoch)
     logger.log_metrics({'weight_norm': weight_norm.item()}, step=epoch)
 

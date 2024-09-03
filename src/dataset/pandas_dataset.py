@@ -3,14 +3,14 @@ import numpy as np
 import os
 from src.utils.etl.dataframe_tools import column_filter
 from collections import OrderedDict
-
+from sklearn.model_selection import train_test_split
 
 
 
 class BasePandasDataset():
     
     def __init__(self, dataframe, target, sample_id_col = None, feature_filter: dict = None, 
-                 match_all: bool = True, dataset_name = 'tabular_dataset'):
+                 match_all: bool = True, dataset_name = 'tabular_dataset', train_test_split=False, test_size=0.4):
         """
         Args:
             file_path (string): Path to the dataset file.
@@ -21,7 +21,7 @@ class BasePandasDataset():
         self.dataframe = dataframe.copy()
         self.set_target(target)
         self.set_name(dataset_name)
-        
+        self.test_size = test_size
         if feature_filter:
             self.X = column_filter(self.dataframe, feature_filter, match_all)
             self.feature_names = self.X.columns
@@ -33,8 +33,13 @@ class BasePandasDataset():
             self.feature_names = self.X.columns
             self.sample_ids = self.dataframe[sample_id_col] if sample_id_col else self.dataframe.index
 
+        if train_test_split ==True:
+            self.train_val_test_split()
 
-
+    def train_val_test_split(self, random_state=None):
+        
+        self.X_train, X_temp, self.y_train, y_temp = train_test_split(self.X, self.y, test_size=self.test_size, random_state=42)
+        self.X_val, self.X_test, self.y_val, self.y_test = train_test_split(X_temp, y_temp, test_size=self.test_size, random_state=42)
 
 
     def __len__(self):
@@ -74,7 +79,7 @@ class RandomPandasDataset(BasePandasDataset):
         self.random_array = np.random.rand(self.rows, self.cols)
         
         self.sample_ids = pandas_dataset.sample_ids
-        self.feature_names = pandas_dataset.feature_names
+        self.feature_names = pandas_dataset.X.columns
         self.X = pd.DataFrame(self.random_array, columns=self.feature_names)
         self.y = pandas_dataset.y
         

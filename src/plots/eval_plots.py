@@ -1,8 +1,43 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import torch
 
 
+# Function to test the model and visualize the outputs individually
+def test_and_visualize(model, test_loader, feature_names):
+    model.eval()
+    with torch.no_grad():
+        for i, batch in enumerate(test_loader):
+            x, y = batch
+            y_hat = model(x)
+            inputs = x.numpy()
+            outputs = y_hat.numpy()
+            errors = (y_hat - y).numpy()
+  
+            for j in range(inputs.shape[0]):
+                input_sample = inputs[j]
+                output_sample = outputs[j]
+                error_sample = errors[j]
+                
+                plt.figure(figsize=(12, 6))
+
+                # Plot input vs output
+                plt.subplot(1, 2, 1)
+                indices = np.arange(len(input_sample))
+                plt.bar(indices - 0.2, input_sample, width=0.4, label='Input')
+                plt.bar(indices + 0.2, output_sample, width=0.4, label='Output', alpha=0.7)
+                plt.xticks(indices, feature_names, rotation='vertical')  # Set X ticks to feature names
+                plt.title(f'Sample {i*test_loader.batch_size + j} - Input vs Output')
+                plt.legend()
+
+                # Plot error
+                plt.subplot(1, 2, 2)
+                plt.bar(indices, error_sample)
+                plt.xticks(indices, feature_names, rotation='vertical')  # Set X ticks to feature names
+                plt.title(f'Sample {i*test_loader.batch_size + j} - Error')
+
+                plt.show()
 
 
 def compare_conditions(df1, df2, df_label1='DF1', df_label2='DF2', title='Absolute Error by Sample ID from Two DataFrames'):
@@ -45,6 +80,8 @@ def compare_conditions(df1, df2, df_label1='DF1', df_label2='DF2', title='Absolu
     plt.tight_layout()
     plt.show()
 
+
+
 def plot_mean_abs_error(df_dict):
     """
     Plots the mean abs_error of each DataFrame in the dictionary.
@@ -66,8 +103,11 @@ def plot_mean_abs_error(df_dict):
     labels = list(means.keys())
     mean_values = list(means.values())
     
-    # Create bars
-    ax.bar(labels, mean_values, color='skyblue')
+    # Create a list of colors
+    colors = plt.cm.viridis(np.linspace(0, 1, len(labels)))
+    
+    # Create bars with different colors
+    ax.bar(labels, mean_values, color=colors)
     
     # Adding some text for labels, title, and custom x-axis tick labels, etc.
     ax.set_xlabel('DataFrame')
